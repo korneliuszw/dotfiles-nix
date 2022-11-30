@@ -1,0 +1,15 @@
+# -*- mode: snippet -*-
+# name: cmakelists template
+# key: clt
+# --
+project("chad-share")
+cmake_minimum_required(VERSION 3.2)
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/")
+include_directories(${PROJECT_SOURCE_DIR}/src)
+include_directories(${PROJECT_SOURCE_DIR}/include)
+file(GLOB all_SRCS
+        "${PROJECT_SOURCE_DIR}/include/*.hpp"
+        "${PROJECT_SOURCE_DIR}/src/*.cpp"
+        )
+add_executable("chad-share" ${all_SRCS})
