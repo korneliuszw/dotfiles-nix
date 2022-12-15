@@ -6,6 +6,7 @@
 {
   imports =
     [ (modulesPath + "/installer/scan/not-detected.nix")
+      ./nvidia-gpu.nix
     ];
   
   boot.initrd.availableKernelModules = [ "nvme" "xhci_pci" "ahci" "usb_storage" "usbhid" "sd_mod" ];
@@ -36,9 +37,9 @@
 
   boot.initrd.luks.devices = {
      cryptroot = {
-	device = "/dev/disk/by-uuid/dc783a8f-4cfb-44ab-8b54-b3d760f3d327";
-	preLVM = true;
-	allowDiscards = true;
+      device = "/dev/disk/by-uuid/dc783a8f-4cfb-44ab-8b54-b3d760f3d327";
+	    preLVM = true;
+	    allowDiscards = true;
      };
   };
 
@@ -47,17 +48,37 @@
   # still possible to use this option, but it's recommended to use it in conjunction
   # with explicit per-interface declarations with `networking.interfaces.<interface>.useDHCP`.
   networking.useDHCP = lib.mkDefault true;
-  # networking.interfaces.enp34s0.useDHCP = lib.mkDefault true;
+
+  networking.interfaces.enp34s0.ipv4.addresses = [
+    {
+      address = "192.168.1.121";
+      prefixLength = 24;
+    }
+  ];
+  networking.interfaces.enp34s0.useDHCP = lib.mkDefault true;
+
+  networking.hostName = "wired";
+
 
   hardware.cpu.amd.updateMicrocode = lib.mkDefault config.hardware.enableRedistributableFirmware;
   # high-resolution display
   hardware.video.hidpi.enable = lib.mkDefault true;
 
   boot.kernelParams = [ 
-    "rcu_nocbs=0-15"
     "processor.max_cstate=5"
-    "pci=nomsi"
   ];
-  hardware.nvidia.open = true;
+  boot.loader = {
+	efi = {
+		canTouchEfiVariables = true;
+		efiSysMountPoint = "/boot";
+	};
+	grub = {
+		efiSupport = true;
+		device = "nodev";
+		version = 2;
+		useOSProber = true;
+	};
+  };
+  # GPU
 }
 

@@ -10,7 +10,6 @@ let
 in {
 imports = [
   <home-manager/nixos>
-  ./pkgs/hyprland.nix
 ];
 users.users.kaw = {
   isNormalUser = true;
@@ -92,30 +91,21 @@ home-manager.users.kaw = { pkgs, ...}: {
     p7zip
     thunarC
     python38
+    gnome.gnome-keyring
     texlive.combined.scheme-medium
+    xdg-utils
+    (vscode-with-extensions.override {
+      vscodeExtensions = with vscode-extensions; [
+        bbenoist.nix
+        vscodevim.vim
+        catppuccin.catppuccin-vsc
+        arrterian.nix-env-selector
+        bradlc.vscode-tailwindcss
+        eamodio.gitlens
+        cweijan.vscode-database-client2
+      ];
+    })
   ];
-  services.mpd.enable = true;
   services.mpd.musicDirectory = "/home/kaw/Music";
-  xdg.configFile."hypr" = {
-    source = ./pkgs/hyprland;
-    recursive = true;
-  };
-  gtk = {
-    enable = true;
-    font = {
-      name = "FiraCode Nerd Font";
-      package = null;
-      size = 12;
-    };
-    iconTheme = {
-      name = "Papirus-Dark";
-      package = pkgs.papirus-icon-theme;
-    };
-    theme = {
-      name = "Catppuccin";
-      package = pkgs.catppuccin-gtk;
-    };
-  };
-  qt.style.name = "gtk2";
 };
 }
