@@ -1,16 +1,11 @@
-{config, pkgs, ...}: let
-  flake-compat = builtins.fetchTarball "https://github.com/edolstra/flake-compat/archive/master.tar.gz";
-  hyprland = (import flake-compat {
-    src = builtins.fetchTarball "https://github.com/hyprwm/Hyprland/archive/refs/tags/v0.18.0beta.tar.gz";
-  }).defaultNix;
-in {
+{config, pkgs, inputs, ...}:
+{
   imports = [
-    hyprland.nixosModules.default
+    inputs.hyprland.nixosModules.default
   ];
-
   programs.hyprland = {
     enable = true;
-    package = hyprland.packages.${pkgs.system}.default.override {
+    package = inputs.hyprland.packages.${pkgs.system}.default.override {
       nvidiaPatches = true;
     };
   };

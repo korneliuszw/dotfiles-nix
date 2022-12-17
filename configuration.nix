@@ -5,15 +5,16 @@
 { config, pkgs, ... }:
 
 {
-  imports =
-    [ # Include the results of the hardware scan.
-      ./hardware-configuration.nix
-      <home-manager/nixos>
-      ./kaw.nix
+  users.users.kaw = {
+    isNormalUser = true;
+    extraGroups = [
+      "wheel"
+      "audio"
+      "video"
+      "docker"
     ];
-  nixpkgs.overlays = [
-    (import ./pkgs)
-  ];
+    shell = pkgs.zsh;
+  };
   # Use the systemd-boot EFI boot loader.
   nixpkgs.config.allowUnfree = true;
   nix.settings.experimental-features = [ "nix-command" "flakes" ];

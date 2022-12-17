@@ -1,10 +1,8 @@
 {config, pkgs, ... }:
-let pkgsUnstable = import <nixpkgs-unstable> {};
-in 
 {
   programs.neovim = {
-    package = pkgsUnstable.neovim-unwrapped;
-    #coc.package = pkgsUnstable.vimPlugins.coc-nvim;
+    package = pkgs.unstable.neovim-unwrapped;
+    #coc.package = pkgs.unstable.vimPlugins.coc-nvim;
     enable = true;
     withPython3 = true;
     withNodeJs = true;
@@ -28,19 +26,19 @@ in
         config = builtins.readFile(./nvim/line.lua);
       }
       nvim-lspconfig
-      pkgsUnstable.vimPlugins.nvim-cmp
+      pkgs.unstable.vimPlugins.nvim-cmp
       {
-        plugin = pkgsUnstable.vimPlugins.nvim-cmp;
+        plugin = pkgs.unstable.vimPlugins.nvim-cmp;
         type = "lua";
         config = builtins.readFile(./nvim/cmp.lua);
       }
-      pkgsUnstable.vimPlugins.cmp-nvim-lsp
-      pkgsUnstable.vimPlugins.ultisnips
-      pkgsUnstable.vimPlugins.yuck-vim
-      pkgsUnstable.vimPlugins.cmp-nvim-ultisnips
-      pkgsUnstable.vimPlugins.cmp-path
-      pkgsUnstable.vimPlugins.cmp-buffer
-      pkgsUnstable.vimPlugins.cmp-nvim-tags
+      pkgs.unstable.vimPlugins.cmp-nvim-lsp
+      pkgs.unstable.vimPlugins.ultisnips
+      pkgs.unstable.vimPlugins.yuck-vim
+      pkgs.unstable.vimPlugins.cmp-nvim-ultisnips
+      pkgs.unstable.vimPlugins.cmp-path
+      pkgs.unstable.vimPlugins.cmp-buffer
+      pkgs.unstable.vimPlugins.cmp-nvim-tags
     ];
     #coc.enable = true;
     extraConfig = ''

@@ -1,12 +1,5 @@
-{ config, pkgs, ...}:
-let
-  useWayland = config.desktop.useWayland;
-in {
-  options = {
-    desktop.useWayland = lib.mkOption {
-      type = lib.types.bool;
-    }
-  };
+{ config, pkgs, lib, ...}:
+{
 
   programs.dconf.enable = true;
 
@@ -30,29 +23,5 @@ in {
   };
   hardware.pulseaudio.enable = false;
 
-  imports = [
-    (if useWayland then ./wayland.nix else ./xorg.nix)
-  ];
-  gtk = {
-    enable = true;
-    font = {
-      name = "FiraCode Nerd Font";
-      package = null;
-      size = 12;
-    };
-    iconTheme = {
-      name = "Papirus-Dark";
-      package = pkgs.papirus-icon-theme;
-    };
-    theme = {
-      name = "Catppuccin";
-      package = pkgs.catppuccin-gtk;
-    };
-  };
-  qt.style.name = "gtk2";
-  xdg.configFile."hypr" = {
-    source = ./pkgs/hyprland;
-    recursive = true;
-  };
   services.mpd.enable = true;
 }
