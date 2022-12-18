@@ -21,6 +21,7 @@
     webcord.url = "github:fufexan/webcord-flake";
     hyprland.url = "github:hyprwm/Hyprland";
     nixos-hardware.url = "github:NixOS/nixos-hardware/master";
+    spicetify-nix.url = github:the-argus/spicetify-nix;
   };
   outputs = { self, nixpkgs, nixpkgs-unstable, home-manager, nixos-hardware, ... }@inputs:
   let

@@ -20,6 +20,7 @@
     ./pkgs/emacs.nix
     ./pkgs/webcord.nix
     ./pkgs/kitty.nix
+    ./pkgs/spotify.nix
   ];
   home.username = "kaw";
   home.homeDirectory = "/home/kaw";
@@ -33,7 +34,6 @@
     thunderbird
     tor-browser-bundle-bin
     ncmpcpp
-    spotify
     pkgs.unstable.wezterm
     home-manager
     pulsemixer
