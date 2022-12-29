@@ -71,6 +71,15 @@
         eamodio.gitlens
         cweijan.vscode-database-client2
         svelte.svelte-vscode
+        prisma.prisma
+        ms-python.python
+      ] ++ pkgs.vscode-utils.extensionsFromVscodeMarketplace [
+        {
+          name = "vscode-thunder-client";
+          publisher = "rangav";
+          version = "2.2.4";
+          sha256 = "642cbd549dc86dd6d1071956ffab5051c637152231e11a9943eb4bd475a9709d";
+        }
       ];
     })
   ];

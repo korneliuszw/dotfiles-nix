@@ -49,6 +49,27 @@
         }
       ];
     };
+    nixosConfigurations.thinkpadIso = nixpkgs.lib.nixosSystem {
+      system = "x86_64-linux";
+      specialArgs = { inherit inputs; };
+      modules = [
+        nixos-hardware.nixosModules.lenovo-thinkpad-t480
+        ./machines/thinkpad.nix
+        ./plasma.nix
+        #./wayland.nix
+        ./configuration.nix
+        { nixpkgs.overlays = [self.overlays.default]; } 
+        home-manager.nixosModules.home-manager {
+          home-manager = {
+            useGlobalPkgs = true;
+            useUserPackages = true;
+            extraSpecialArgs = { inherit inputs; };
+            users.kaw = ./kaw.nix ;
+          };
+        }
+        "${nixpkgs}/nixos/modules/installer/cd-dvd/installation-cd-minimal.nix"
+      ];
+    };
     overlays = {
       default = (final: prev: {
         unstable = import nixpkgs-unstable { system = final.system; };
