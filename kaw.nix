@@ -22,9 +22,13 @@
     ./pkgs/kitty.nix
     ./pkgs/spotify.nix
   ];
+  home.sessionVariables = {
+    XDG_DATA_DIRS= with pkgs;"${gsettings-desktop-schemas}/share/gsettings-schemas/${gsettings-desktop-schemas.name}:${gtk3}/share/gsettings-schemas/${gtk3.name}:\${XDG_DATA_DIRS}";
+  };
   home.username = "kaw";
   home.homeDirectory = "/home/kaw";
   home.packages = with pkgs; [
+    cider
     ungoogled-chromium
     pkgs.unstable.mpv
     discord
@@ -104,4 +108,5 @@
     source = ./pkgs/hyprland;
     recursive = true;
   };
+  services.gnome-keyring.enable = true;
 }
