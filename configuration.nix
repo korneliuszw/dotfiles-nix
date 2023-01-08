@@ -47,6 +47,7 @@
      curl
      git
      docker-compose
+     gsettings-desktop-schemas
      # Link sudo to doas
      #(pkgs.writeScriptBin "sudo" ''exec doas "$@"'')
    ];
