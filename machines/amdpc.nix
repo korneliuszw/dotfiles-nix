@@ -48,19 +48,19 @@
   # (the default) this is the recommended approach. When using systemd-networkd it's
   # still possible to use this option, but it's recommended to use it in conjunction
   # with explicit per-interface declarations with `networking.interfaces.<interface>.useDHCP`.
-  networking.useDHCP = false;
+  #networking.useDHCP = true;
+  #networking.interfaces.enp34s0.useDHCP = true;
 
-  networking.interfaces.enp34s0.ipv4.addresses = [
-    {
-      address = "192.168.1.121";
-      prefixLength = 24;
-    }
-  ];
-  networking.defaultGateway = "192.168.1.1";
-  networking.nameservers = ["1.1.1.1" "1.0.0.1"];
-  networking.interfaces.enp34s0.useDHCP = false;
+  #networking.interfaces.enp34s0.ipv4.addresses = [
+  #  {
+  #    address = "192.168.1.121";
+  #    prefixLength = 24;
+  #  }
+  #];
+  #networking.defaultGateway = "192.168.1.1";
+  #networking.nameservers = ["1.1.1.1" "1.0.0.1"];
   networking.networkmanager = {
-    #enable = true;
+    enable = true;
   };
   networking.wireless.enable = false;
   networking.hostName = "wired";
