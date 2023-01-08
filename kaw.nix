@@ -88,6 +88,13 @@
     })
   ];
   services.mpd.musicDirectory = "/home/kaw/Music";
+  services.mpd.enable = true;
+  services.mpd.extraConfig = ''
+    audio_output {
+      type "pipewire"
+      name "Pipewire Output 1"
+    }
+  '';
   gtk = {
     font = {
       name = "FiraCode Nerd Font";

@@ -22,6 +22,4 @@
     pulse.enable = true;
   };
   hardware.pulseaudio.enable = false;
-
-  services.mpd.enable = true;
 }
