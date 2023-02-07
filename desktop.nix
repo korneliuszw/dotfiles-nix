@@ -1,6 +1,8 @@
 { config, pkgs, lib, ...}:
-{
-
+let
+  sf = pkgs.callPackage ./pkgs/font-sf.nix {};
+  sf-mono = pkgs.callPackage ./pkgs/font-sf-mono.nix {};
+in {
   programs.dconf.enable = true;
 
   fonts.fonts = with pkgs; [
@@ -12,6 +14,8 @@
     (nerdfonts.override {
       fonts = [ "FiraCode" "DroidSansMono" ];
     })
+    sf
+    sf-mono
   ];
   sound.enable = true;
   services.xserver.layout = "pl";

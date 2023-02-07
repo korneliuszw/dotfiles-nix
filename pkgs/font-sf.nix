@@ -1,4 +1,4 @@
-{ stdenv, fetchurl }:
+{ stdenv, fetchurl, lib }:
 
 stdenv.mkDerivation rec {
   version = "2015-06-25";
@@ -50,8 +50,8 @@ stdenv.mkDerivation rec {
   meta = {
     description = "System San Francisco Font by Apple";
     homepage = https://github.com/supermarin/YosemiteSanFranciscoFont;
-    license = stdenv.lib.licenses.asl20;
-    platforms = stdenv.lib.platforms.all;
+    license = lib.licenses.asl20;
+    platforms = lib.platforms.all;
     maintainers = [];
   };
 }

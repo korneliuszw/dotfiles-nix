@@ -52,15 +52,12 @@
     playerctl
     grim
     slurp
-    pkgs.unstable.hyprpaper
     p7zip
     python38
     gnome.gnome-keyring
-    texlive.combined.scheme-medium
+    texlive.combined.scheme-full
     xdg-utils
     ripgrep
-    ark
-    unstable.latte-dock
     ocs-url
     rnix-lsp
     (vscode-with-extensions.override {
@@ -77,12 +74,20 @@
         svelte.svelte-vscode
         prisma.prisma
         ms-python.python
+        pkgs.unstable.vscode-extensions.astro-build.astro-vscode
+        vscode-extensions.matklad.rust-analyzer
       ] ++ pkgs.vscode-utils.extensionsFromVscodeMarketplace [
         {
           name = "vscode-thunder-client";
           publisher = "rangav";
           version = "2.2.4";
           sha256 = "642cbd549dc86dd6d1071956ffab5051c637152231e11a9943eb4bd475a9709d";
+        }
+        {
+          name = "tauri-vscode";
+          publisher = "tauri-apps";
+          version = "0.2.1";
+          sha256 = "707fc3843da8a4b96592b6ad7516f1fcc70527edbc62645de840ae711c1daf78";
         }
       ];
     })

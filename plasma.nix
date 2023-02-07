@@ -13,4 +13,10 @@
     enable = true;
     gtkUsePortal = true;
   };
+  environment.systemPackages = with pkgs; [
+    kcalc
+    okular
+    ark
+    unstable.latte-dock
+  ];
 }

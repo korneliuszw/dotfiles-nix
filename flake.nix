@@ -35,7 +35,8 @@
         nixos-hardware.nixosModules.common-cpu-amd-pstate
         nixos-hardware.nixosModules.common-pc-ssd
         ./machines/amdpc.nix
-        ./plasma.nix
+        ./gnome.nix
+        #./plasma.nix
         #./wayland.nix
         ./configuration.nix
         { nixpkgs.overlays = [self.overlays.default]; } 
@@ -55,7 +56,8 @@
       modules = [
         nixos-hardware.nixosModules.lenovo-thinkpad-t480
         ./machines/thinkpad.nix
-        ./plasma.nix
+        ./gnome.nix
+        #./plasma.nix
         #./wayland.nix
         ./configuration.nix
         { nixpkgs.overlays = [self.overlays.default]; } 

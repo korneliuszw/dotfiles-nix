@@ -6,7 +6,7 @@
 {
   imports =
     [ (modulesPath + "/installer/scan/not-detected.nix")
-      ./nvidia-gpu.nix
+      ./amd-gpu.nix
       ../desktop.nix
     ];
   #desktop.useWayland = true;
@@ -15,6 +15,8 @@
   boot.kernelModules = [ "kvm-amd" ];
   boot.extraModulePackages = [ ]; 
   boot.supportedFilesystems = [ "ntfs" ];
+  boot.resumeDevice = "/dev/mapper/wired-swap";
+  #boot.kernelParams = ["ipv6.disable=1"];
   fileSystems."/" =
     { device = "/dev/wired/god";
       fsType = "ext4";
@@ -65,6 +67,8 @@
   networking.wireless.enable = false;
   networking.hostName = "wired";
 
+  networking.enableIPv6 = false;
+
   hardware.cpu.amd.updateMicrocode = lib.mkDefault config.hardware.enableRedistributableFirmware;
   # high-resolution display
   hardware.video.hidpi.enable = lib.mkDefault true;
@@ -87,8 +91,12 @@
      git
      docker-compose
      via
+     virt-manager
      # Link sudo to doas
      #(pkgs.writeScriptBin "sudo" ''exec doas "$@"'')
    ];
+  virtualisation.libvirtd.enable = true;
+  programs.dconf.enable = true;
+  users.users.kaw.extraGroups = ["libvirtd"];
 }
 

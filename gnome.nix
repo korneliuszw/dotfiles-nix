@@ -2,7 +2,7 @@
 {
   services.xserver.enable = true;
   services.xserver.displayManager.gdm.enable = true;
-  services.xserver.displayManager.gnome.enable = true;
+  services.xserver.desktopManager.gnome.enable = true;
   environment.gnome.excludePackages = with pkgs.gnome; [
     cheese
     gnome-music
@@ -20,5 +20,6 @@
   services.udev.packages = with pkgs; [ gnome.gnome-settings-daemon ];
   environment.systemPackages = with pkgs; [
     gnomeExtensions.appindicator
+    gnome3.gnome-tweaks
   ];
 }
