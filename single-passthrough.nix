@@ -1,7 +1,7 @@
 { config, pkgs, lib, ...}:
 let
-  cfg = config.singlePciPasstrough;
-  qemuHook = pkgs.writeText "${vm}-qemu"
+  cfg = config.singlePciPassthrough;
+  qemuHook = pkgs.writeText "qemu"
       ''
       #!/run/current-system/sw/bin/bash
       
@@ -23,76 +23,121 @@ let
       done <<< "$(find -L "$HOOKPATH" -maxdepth 1 -type f -executable -print;)"
       fi
       '';
-  hooks = map (vm: {
-    vmName = vm;
-    modules = if cfg.gpuType == "nvidia" then "nvidia_drm nvidia_modeset nvidia_uvm nvidia" else "amdgpu";
-    deviceDetach = lib.strings.concatMapStrings (device: "virst nodedev-detach pci_${device};") cfg.pciIds;
-    deviceAttach = lib.strings.concatMapStrings (device: "virst nodedev-reattach pci_${device};") cfg.pciIds;
-    start = pkgs.writeText "${vm}-start"
-      ''
-      #!/run/current-system/sw/bin/bash
-      set -x
-      
-      # Stop display manager
-      systemctl stop display-manager
+    hooks = map (vm:
+      let
+        modules = if cfg.gpuType == "nvidia" then "nvidia_drm nvidia_modeset nvidia_uvm nvidia" else "drm_kms_helper amdgpu ttm drm";
+        deviceDetach = lib.strings.concatMapStrings (device: "virsh nodedev-detach pci_${device};") cfg.pciIds;
+        deviceAttach = lib.strings.concatMapStrings (device: "virsh nodedev-reattach pci_${device};") cfg.pciIds;
+      in {
+        vmName = vm;
+        start = pkgs.writeText "${vm}-start"
+          ''
+          #!/run/current-system/sw/bin/bash
+          set -x
           
-      # Unbind VTconsoles: might not be needed
-      echo 0 > /sys/class/vtconsole/vtcon0/bind
-      echo 0 > /sys/class/vtconsole/vtcon1/bind
-      
-      # Unbind EFI Framebuffer
-      echo efi-framebuffer.0 > /sys/bus/platform/drivers/efi-framebuffer/unbind
-      
-      # Unload AMD kernel module
-      modprobe -r ${modules}
-      
-      # Detach GPU devices from host
-      # Use your GPU and HDMI Audio PCI host device
-      ${deviceDetach}
-      
-      # Load vfio module
-      modprobe vfio-pci
-      '';
-    stop = pkgs.writeText "${vm}-stop"
-      ''
-      #!/run/current-system/sw/bin/bash
-      set -x
-      ${deviceAttach}
-      modprobe -r vfio-pci
-      modprobe ${modules}
-      echo "efi-framebuffer.0" > /sys/bus/platform/drivers/efi-framebuffer/bind
-      echo 1 > /sys/class/vtconsole/vtcon0/bind
-      echo 1 > /sys/class/vtconsole/vtcon1/bind
-      systemctl start display-manager
-      '';
+          # Stop display manager
+          systemctl stop display-manager
+          systemctl isolate multi-user.target
+          pkill gdm-x-session
+          if test -e "/tmp/vfio-bound-consoles"; then
+            rm -f /tmp/vfio-bound-consoles
+          fi
+          for (( i = 0; i < 16; i++))
+            do
+              if test -x /sys/class/vtconsole/vtcon$i; then
+                  if [ "$(grep -c "frame buffer" /sys/class/vtconsole/vtcon$i/name)" = 1 ]; then
+                    echo 0 > /sys/class/vtconsole/vtcon$i/bind
+                    echo "$i" >> /tmp/vfio-bound-consoles
+                  fi
+              fi
+            done
+
+          # Unbind EFI Framebuffer
+          echo efi-framebuffer.0 > /sys/bus/platform/drivers/efi-framebuffer/unbind
+          ${deviceDetach}
+          # Unload AMD kernel module
+          modprobe -r -a ${modules}         
+          # Detach GPU devices from host
+          # Use your GPU and HDMI Audio PCI host device
+          
+          # Load vfio module
+          modprobe vfio
+          modprobe vfio_pci
+          modprobe vfio_iommu_type1
+          '';
+        stop = pkgs.writeText "${vm}-stop"
+          ''
+          #!/run/current-system/sw/bin/bash
+          set -x
+          ${deviceAttach}
+          modprobe -r vfio
+          modprobe -r vfio_pci
+          modprobe -r vfio_iommu_type1
+          modprobe -a ${modules}
+          echo "efi-framebuffer.0" > /sys/bus/platform/drivers/efi-framebuffer/bind
+          echo 1 > /sys/class/vtconsole/vtcon0/bind
+          echo 1 > /sys/class/vtconsole/vtcon1/bind
+          systemctl start display-manager
+          input="/tmp/vfio-bound-consoles"
+          while read -r consoleNumber; do
+            if test -x /sys/class/vtconsole/vtcon$consoleNumber; then
+                if [ "$(grep -c "frame buffer" /sys/class/vtconsole/vtcon$consoleNumber/name)" \
+                     = 1 ]; then
+          	  echo 1 > /sys/class/vtconsole/vtcon$consoleNumber/bind
+                fi
+            fi
+          done < "$input"
+
+          '';
   }) cfg.vmNames;
+  copyInstructions = lib.strings.concatMapStrings (hook: ''
+      mkdir -p /var/lib/libvirt/hooks/qemu.d/${hook.vmName}/prepare/begin;
+      mkdir -p /var/lib/libvirt/hooks/qemu.d/${hook.vmName}/release/end;
+      cp ${hook.start} /var/lib/libvirt/hooks/qemu.d/${hook.vmName}/prepare/begin/start.sh;
+      cp ${hook.stop} /var/lib/libvirt/hooks/qemu.d/${hook.vmName}/release/end/stop.sh;
+      chmod +x /var/lib/libvirt/hooks/qemu.d/${hook.vmName}/prepare/begin/start.sh;
+      chmod +x /var/lib/libvirt/hooks/qemu.d/${hook.vmName}/release/end/stop.sh;
+    '') hooks;
+  ovfmFull = pkgs.OVMFFull.override {
+    secureBoot = true;
+    tpmSupport = true;
+  };
+  quickemuNew = pkgs.quickemu.overrideAttrs (old: {
+    version = "4.6";
+    src = pkgs.fetchFromGitHub {
+      owner = "quickemu-project";
+      repo = "quickemu";
+      rev = "4.6";
+      hash = "sha256-C/3zyHnxAxCu8rrR4Znka47pVPp0vvaVGyd4TVQG3qg=";
+    };
+  });
 in {
   options.singlePciPassthrough = {
-    enable = mkEnableOption "Single PCI Passtrough";
-    cpuType = mkOption {
+    enable = lib.mkEnableOption "Single PCI Passtrough";
+    cpuType = lib.mkOption {
       default = "amd";
-      type = types.str;
+      type = lib.types.str;
     };
-    gpuType = mkOption {
+    gpuType = lib.mkOption {
       default = "amd";
-      type = types.str;
+      type = lib.types.str;
     };
       
-    pciIds = mkOption {
+    pciIds = lib.mkOption {
       description = "PCI IDs of devices to passtrought and disable on host (in order)";
-      type = types.listOf types.str;
+      type = lib.types.listOf lib.types.str;
     };
-    libvirtUsers = mkOption {
+    libvirtUsers = lib.mkOption {
       description = "Users to add to libvirt group";
-      type = types.listOf types.str;
+      type = lib.types.listOf lib.types.str;
       default = [];
     };
-    vmNames = mkOption {
+    vmNames = lib.mkOption {
       description = "Names of vms to use single passthrough";
-      type = types.listOF types.str;
+      type = lib.types.listOf lib.types.str;
     };
-  }
-  config = (mkIf cfg.enable {
+  };
+  config = lib.mkIf cfg.enable {
     boot.kernelParams = [
       "pcie_acs_override=downstream"
       "${cfg.cpuType}_iommu=on"
@@ -105,10 +150,18 @@ in {
       virtmanager
       pciutils
       OVMF
+      swtpm
+      quickemuNew
     ];
     virtualisation.libvirtd.enable = true;
+    virtualisation.libvirtd.qemu.swtpm.package = pkgs.qemu_kvm;
+    virtualisation.libvirtd.qemu.swtpm.enable = true;
+    virtualisation.libvirtd.qemu.ovmf = {
+      enable = true;
+      packages = [ovfmFull.fd];
+    };
     users.groups.libvirtd.members = [ "root" ] ++ cfg.libvirtUsers;
-    systemd.services.libvirtd.path = [ pkgs.buildEnv {
+    systemd.services.libvirtd.path = [ (pkgs.buildEnv {
       name = "qemu-hook-env";
       paths = with pkgs; [
         bash
@@ -118,19 +171,16 @@ in {
         ripgrep
         sd
       ];
-    }];
-    copyInstructions = lib.strings.concatMapStrings (hook: ''
-        mkdir -p /var/lib/libvirt/qemu.d/${hook.vmName}/{prepare/begin,/release/end};
-        cp ${hook.start} /var/lib/libvirt/hooks/qemu.d/${hook.vmName}/prepare/begin/start.sh;
-        cp ${hook.stop} /var/lib/libvirt/hooks/qemu.d/${hook.vmName}/release/end/stop.sh;
-        chmod +x /var/lib/libvirt/hooks/qemu.d/${hook.vmName}/prepare/begin/start.sh;
-        chmod +x /var/lib/libvirt/hooks/qemu.d/${hook.vmName}/release/end/stop.sh;
-      '') hooks;
+    })];
     systemd.services.libvirtd.preStart = ''
       mkdir -p /var/lib/libvirt/hooks;
       cp ${qemuHook} /var/lib/libvirt/hooks/qemu;
       chmod +x /var/lib/libvirt/hooks/qemu;
       ${copyInstructions}
     '';
-  });
+    environment.sessionVariables = {
+      ENV_EFI_VARS_SECURE="/run/libvirt/nix-ovmf/OVMF_VARS.fd";
+      ENV_EFI_CODE_SECURE="/run/libvirt/nix-ovmf/OVMF_CODE.fd";
+    };
+  };
 }
