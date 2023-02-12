@@ -8,12 +8,13 @@
     [ (modulesPath + "/installer/scan/not-detected.nix")
       ./amd-gpu.nix
       ../desktop.nix
+      ../single-passthrough.nix
     ];
   #desktop.useWayland = true;
   boot.initrd.availableKernelModules = [ "nvme" "xhci_pci" "ahci" "usb_storage" "usbhid" "sd_mod" ];
   boot.initrd.kernelModules = [ "dm-snapshot" ];
   boot.kernelModules = [ "kvm-amd" ];
-  boot.extraModulePackages = [ ]; 
+  boot.extraModulePackages = with config.boot.kernelPackages; [ vendor-reset ]; 
   boot.supportedFilesystems = [ "ntfs" ];
   boot.resumeDevice = "/dev/mapper/wired-swap";
   #boot.kernelParams = ["ipv6.disable=1"];
@@ -29,7 +30,7 @@
       options =  [ "ssd" ];
     };
 
-  fileSystems."/boot" =
+  fileSystems."/boot/efi" =
     { device = "/dev/nvme0n1p1";
       fsType = "vfat";
     };
@@ -37,13 +38,23 @@
   swapDevices =
     [ { device = "/dev/disk/by-uuid/873edb5c-a032-467e-92b7-271778f26bc7"; }
     ];
-
+  boot.initrd.secrets = {
+    "vms-key" = "/root/vms-key";
+    "wired-keys" = "/root/wired-keys";
+  };
   boot.initrd.luks.devices = {
      cryptroot = {
       device = "/dev/disk/by-uuid/dc783a8f-4cfb-44ab-8b54-b3d760f3d327";
 	    preLVM = true;
-	    allowDiscards = true;
-     };
+            allowDiscards = true;
+            keyFile = "/wired-keys";
+      };
+      cryptvms = {
+        device = "/dev/disk/by-uuid/84c759b0-6e79-4621-99f9-51e88f0a80ca";
+        preLVM = true;
+        allowDiscards = true;
+        keyFile = "/vms-key";
+      };
   };
 
   # Enables DHCP on each ethernet and wireless interface. In case of scripted networking
@@ -81,7 +92,8 @@
 		efiSupport = true;
 		device = "nodev";
 		version = 2;
-		useOSProber = true;
+                useOSProber = true;
+                enableCryptodisk = true;
 	};
   };
   environment.systemPackages = with pkgs; [
@@ -91,12 +103,20 @@
      git
      docker-compose
      via
-     virt-manager
      # Link sudo to doas
      #(pkgs.writeScriptBin "sudo" ''exec doas "$@"'')
    ];
-  virtualisation.libvirtd.enable = true;
-  programs.dconf.enable = true;
-  users.users.kaw.extraGroups = ["libvirtd"];
+   singlePciPassthrough = {
+    enable = true;
+    cpuType = "amd";
+    gpuType = "amd";
+    pciIds = ["0000_28_00_0" "0000_28_00_1"];
+    vmNames = [ "win11-gaming" ];
+    libvirtUsers = [ "kaw" ];
+  };
+  services.openssh = {
+    enable = true;
+    passwordAuthentication = true;
+  };
 }
 

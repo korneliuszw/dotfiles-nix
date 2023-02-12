@@ -56,7 +56,14 @@ let
           echo efi-framebuffer.0 > /sys/bus/platform/drivers/efi-framebuffer/unbind
           ${deviceDetach}
           # Unload AMD kernel module
-          modprobe -r -a ${modules}         
+          modprobe -r amdgpu
+          modprobe -r ttm
+          modprobe -r drm_kms_helper
+          modprobe -r drm
+          #modprobe -r amdgpu ttm
+          #modprobe -r drm_kms_helper drm
+          #modprobe -r ${modules}         
+          #modprobe -r ${modules}         
           # Detach GPU devices from host
           # Use your GPU and HDMI Audio PCI host device
           
