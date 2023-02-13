@@ -13,7 +13,7 @@ let
       BASEDIR="$(dirname $0)"
       
       HOOKPATH="$BASEDIR/qemu.d/$GUEST_NAME/$HOOK_NAME/$STATE_NAME"
-      set -e # If a script exits with an error, we should as well.
+      #set -e # If a script exits with an error, we should as well.
       
       if [ -f "$HOOKPATH" ]; then
       eval \""$HOOKPATH"\" "$@"
@@ -33,11 +33,12 @@ let
         start = pkgs.writeText "${vm}-start"
           ''
           #!/run/current-system/sw/bin/bash
-          set -x
+          echo 'device_specific' | sudo tee /sys/bus/pci/devices/0000:28:00.0/reset_method
           
+          function start() {
+            set -x
           # Stop display manager
           systemctl stop display-manager
-          systemctl isolate multi-user.target
           pkill gdm-x-session
           if test -e "/tmp/vfio-bound-consoles"; then
             rm -f /tmp/vfio-bound-consoles
@@ -51,26 +52,19 @@ let
                   fi
               fi
             done
-
-          # Unbind EFI Framebuffer
-          echo efi-framebuffer.0 > /sys/bus/platform/drivers/efi-framebuffer/unbind
-          ${deviceDetach}
+          sleep 4
           # Unload AMD kernel module
           modprobe -r amdgpu
           modprobe -r ttm
           modprobe -r drm_kms_helper
           modprobe -r drm
-          #modprobe -r amdgpu ttm
-          #modprobe -r drm_kms_helper drm
-          #modprobe -r ${modules}         
-          #modprobe -r ${modules}         
-          # Detach GPU devices from host
-          # Use your GPU and HDMI Audio PCI host device
-          
+          ${deviceDetach}
           # Load vfio module
           modprobe vfio
           modprobe vfio_pci
-          modprobe vfio_iommu_type1
+            modprobe vfio_iommu_type1
+          }
+          start 2>&1 | tee -a /tmp/vm-logs
           '';
         stop = pkgs.writeText "${vm}-stop"
           ''
@@ -81,7 +75,6 @@ let
           modprobe -r vfio_pci
           modprobe -r vfio_iommu_type1
           modprobe -a ${modules}
-          echo "efi-framebuffer.0" > /sys/bus/platform/drivers/efi-framebuffer/bind
           echo 1 > /sys/class/vtconsole/vtcon0/bind
           echo 1 > /sys/class/vtconsole/vtcon1/bind
           systemctl start display-manager
@@ -150,8 +143,9 @@ in {
       "${cfg.cpuType}_iommu=on"
       "kvm.ignore_msrs=1"
       "iommu=pt"
+      "video=efifb:off"
     ];
-    boot.kernelModules = [ "kvm-${cfg.cpuType}" "vfio-pci"];
+    boot.kernelModules = [ "kvm-${cfg.cpuType}" "vfio-pci" "vendor-reset"];
     environment.systemPackages = with pkgs; [
       qemu
       virtmanager
@@ -160,6 +154,10 @@ in {
       swtpm
       quickemuNew
     ];
+    virtualisation.libvirtd.extraConfig = ''
+      log_filters="1:libvirt 1:qemu 1:conf 1:security 3:event 3:json 3:file 3:object 1:util"
+      log_outputs="1:file:/var/log/libvirt/libvirtd.log"
+    '';
     virtualisation.libvirtd.enable = true;
     virtualisation.libvirtd.qemu.swtpm.package = pkgs.qemu_kvm;
     virtualisation.libvirtd.qemu.swtpm.enable = true;
@@ -177,6 +175,7 @@ in {
         systemd
         ripgrep
         sd
+        dbus
       ];
     })];
     systemd.services.libvirtd.preStart = ''
