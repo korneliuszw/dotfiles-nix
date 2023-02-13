@@ -24,8 +24,8 @@
       options = [ "noatime" "nodiratime" "discard" ];
     };
   fileSystems."/boot" = {
-      device = "/dev/disk/by-uuid/a0bfc06a-a1b2-4d86-94bd-3320d25872e1";
-      fsType = "ext4";
+    device = "/dev/nvme0n1p1";
+    fsType = "vfat";
   };
   fileSystems."/home" =
     { device = "/dev/wired/lain";
@@ -33,41 +33,14 @@
       options =  [ "ssd" ];
     };
 
-  fileSystems."/boot/efi" =
-    { device = "/dev/nvme0n1p1";
-      fsType = "vfat";
-    };
-  fileSystems."/vms" = {
-    device = "/dev/wired/vms";
-    fsType = "ext4";
-  };
-
   swapDevices =
     [ { device = "/dev/disk/by-uuid/873edb5c-a032-467e-92b7-271778f26bc7"; }
     ];
-  boot.initrd.secrets = {
-    "vms-key" = "/root/vms-key";
-    "wired-keys" = "/root/wired-keys";
-    "boot-keys" = "/root/boot-keys";
-  };
   boot.initrd.luks.devices = {
      cryptroot = {
       	device = "/dev/disk/by-uuid/dc783a8f-4cfb-44ab-8b54-b3d760f3d327";
       	preLVM = true;
       	allowDiscards = true;
-        keyFile = "/wired-keys";
-      };
-      cryptvms = {
-        device = "/dev/disk/by-uuid/84c759b0-6e79-4621-99f9-51e88f0a80ca";
-        preLVM = true;
-        allowDiscards = true;
-        keyFile = "/vms-key";
-      };
-      cryptboot = {
-        device = "/dev/disk/by-uuid/d73e22ea-4cea-4ce7-9fe2-64f805fe82d0";
-        preLVM = true;
-        allowDiscards = true;
-        keyFile = "/boot-keys";
       };
   };
 
@@ -100,13 +73,12 @@
   boot.loader = {
 	efi = {
 		canTouchEfiVariables = true;
-		efiSysMountPoint = "/boot/efi";
+		efiSysMountPoint = "/boot";
 	};
 	grub = {
 		device = "nodev";
 		version = 2;
 		efiSupport = true;
-                enableCryptodisk = true;
 		enable = true;
 	};
   };
@@ -121,7 +93,7 @@
      #(pkgs.writeScriptBin "sudo" ''exec doas "$@"'')
    ];
    singlePciPassthrough = {
-    enable = true;
+    enable = false;
     cpuType = "amd";
     gpuType = "amd";
     pciIds = ["0000_28_00_0" "0000_28_00_1"];
